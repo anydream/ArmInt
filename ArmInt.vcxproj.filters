@@ -38,5 +38,8 @@
     <ClInclude Include="include\ELFLoader.h">
       <Filter>ArmInt</Filter>
     </ClInclude>
+    <ClInclude Include="include\ELFMapper.h">
+      <Filter>ArmInt</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

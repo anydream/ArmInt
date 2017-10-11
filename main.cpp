@@ -7,9 +7,12 @@
 #include "ArmInt.h"
 #include "BinReader.h"
 #include "ELFLoader.h"
+#include <string>
+#include <unordered_map>
+#include "ELFMapper.h"
 
 //////////////////////////////////////////////////////////////////////////
-std::unique_ptr<uint8_t[]> LoadFile(const char *path, size_t &fsize)
+static std::unique_ptr<uint8_t[]> LoadFile(const char *path, size_t &fsize)
 {
 	FILE *fp = fopen(path, "rb");
 	if (!fp)
@@ -27,6 +30,66 @@ std::unique_ptr<uint8_t[]> LoadFile(const char *path, size_t &fsize)
 	return buffer;
 }
 
+static int LoadELFFile(ELFLoader &elf, BinReader &elfReader, bool isOutput)
+{
+	if (!elf.Load(elfReader))
+	{
+		if (isOutput)
+			fprintf(stderr, "Bad ELF image\n");
+		return 1;
+	}
+
+	const auto &elfHdr = elf.GetELFHeader();
+	// ARM
+	if (elfHdr.eMachine != 0x28)
+	{
+		if (isOutput)
+			fprintf(stderr, "Only support ARM instruction set\n");
+		return 2;
+	}
+	// Relocatable
+	if (elfHdr.eType != 1)
+	{
+		if (isOutput)
+			fprintf(stderr, "Currently only support relocatable object file\n");
+		return 3;
+	}
+
+	if (isOutput)
+	{
+		const size_t secCount = elf.GetSectionInfoCount();
+		for (size_t i = 0; i < secCount; ++i)
+		{
+			const auto &secInfo = elf.GetSectionInfo(i);
+
+			printf("%u: [%s] offset(%llu), size(%llu)\n", i, secInfo.shNameStr, secInfo.shOffset, secInfo.shSize);
+		}
+
+		const size_t symCount = elf.GetSymtabInfoCount();
+		for (size_t i = 0; i < symCount; ++i)
+		{
+			const auto &symInfo = elf.GetSymtabInfo(i);
+
+			printf("symbol: [%s] sid(%u), size(%llu), value(%llu), type(%u), other(%u)",
+				symInfo.stNameStr, symInfo.stShNdx,
+				symInfo.stSize, symInfo.stValue,
+				symInfo.stInfo, symInfo.stOther);
+
+			if (symInfo.stInfo == 1)
+			{
+				const auto &strSec = elf.GetSectionInfo(symInfo.stShNdx);
+				char *strData = static_cast<char*>(alloca(static_cast<size_t>(strSec.shSize)));
+				memcpy(strData, elfReader.Data(static_cast<size_t>(strSec.shOffset)), static_cast<size_t>(strSec.shSize));
+				printf(", '%.*s'", static_cast<int>(strSec.shSize), strData);
+			}
+
+			printf("\n");
+		}
+	}
+
+	return 0;
+}
+
 //////////////////////////////////////////////////////////////////////////
 int main(int argc, const char **argv)
 {
@@ -41,58 +104,16 @@ int main(int argc, const char **argv)
 	if (!elfBuf)
 	{
 		fprintf(stderr, "Cannot open ELF image at '%s'\n", elfFile);
-		return 1;
+		return -1;
 	}
 
-	BinReader elfReader(elfBuf.get(), elfSize);
 	ELFLoader elf;
-	if (!elf.Load(elfReader))
-	{
-		fprintf(stderr, "Bad ELF image\n");
-		return 2;
-	}
+	BinReader elfReader(elfBuf.get(), elfSize);
+	const int status = LoadELFFile(elf, elfReader, true);
+	if (status != 0)
+		return status;
 
-	auto &elfHdr = elf.GetELFHeader();
-	// ARM
-	if (elfHdr.eMachine != 0x28)
-	{
-		fprintf(stderr, "Only support ARM instruction set\n");
-		return 3;
-	}
-	// Relocatable
-	if (elfHdr.eType != 1)
-	{
-		fprintf(stderr, "Currently only support relocatable object file\n");
-		return 4;
-	}
-
-	const size_t secCount = elf.GetSectionInfoCount();
-	for (size_t i = 0; i < secCount; ++i)
-	{
-		auto &secInfo = elf.GetSectionInfo(i);
-		printf("%u: [%s] offset(%llu), size(%llu)\n", i, secInfo.shNameStr, secInfo.shOffset, secInfo.shSize);
-	}
-
-	const size_t symCount = elf.GetSymtabInfoCount();
-	for (size_t i = 0; i < symCount; ++i)
-	{
-		auto &symInfo = elf.GetSymtabInfo(i);
-
-		printf("symbol: [%s] sid(%u), size(%llu), value(%llu), type(%u), other(%u)",
-			symInfo.stNameStr, symInfo.stShNdx,
-			symInfo.stSize, symInfo.stValue,
-			symInfo.stInfo, symInfo.stOther);
-
-		if (symInfo.stInfo == 1)
-		{
-			auto &strSec = elf.GetSectionInfo(symInfo.stShNdx);
-			char *strData = static_cast<char*>(alloca(strSec.shSize));
-			memcpy(strData, elfReader.Data(strSec.shOffset), strSec.shSize);
-			printf(", '%.*s'", static_cast<int>(strSec.shSize), strData);
-		}
-
-		printf("\n");
-	}
+	ELFMapper elfMap(elf);
 
 	return 0;
 }

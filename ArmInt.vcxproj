@@ -159,6 +159,7 @@
     <ClInclude Include="include\ArmIntCfg.h" />
     <ClInclude Include="include\BinReader.h" />
     <ClInclude Include="include\ELFLoader.h" />
+    <ClInclude Include="include\ELFMapper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
