@@ -17,4 +17,15 @@
       <UniqueIdentifier>{7e676f50-7b10-40fa-9495-bf08c51495ee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\ArmInt.h">
+      <Filter>ArmInt</Filter>
+    </ClInclude>
+    <ClInclude Include="src\BinReader.h">
+      <Filter>ArmInt</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ELFLoader.h">
+      <Filter>ArmInt</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
