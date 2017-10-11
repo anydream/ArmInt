@@ -18,7 +18,7 @@ public:
 		const size_t sz = sizeof(T);
 		if (Offset_ + sz <= Length_)
 		{
-			result = *static_cast<const T*>(Buffer_ + Offset_);
+			result = *reinterpret_cast<const T*>(Buffer_ + Offset_);
 			Offset_ += sz;
 			return true;
 		}

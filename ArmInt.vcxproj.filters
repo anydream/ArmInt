@@ -18,13 +18,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ELFLoader.cpp">
+      <Filter>ArmInt</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="include\ArmInt.h">
       <Filter>ArmInt</Filter>
     </ClInclude>
-    <ClInclude Include="src\BinReader.h">
+    <ClInclude Include="include\ArmIntCfg.h">
       <Filter>ArmInt</Filter>
     </ClInclude>
-    <ClInclude Include="src\ELFLoader.h">
+    <ClInclude Include="include\BinReader.h">
+      <Filter>ArmInt</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ELFLoader.h">
       <Filter>ArmInt</Filter>
     </ClInclude>
   </ItemGroup>
