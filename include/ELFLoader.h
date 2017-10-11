@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <memory>
 #include "ArmIntCfg.h"
 
 class BinReader;
@@ -9,7 +10,7 @@ class BinReader;
 class ELFLoader
 {
 public:
-	struct ELFPreHeader
+	struct ELFHeaderBase
 	{
 		uint8_t eiMagic[4];
 		uint8_t eiClass;
@@ -20,7 +21,7 @@ public:
 		uint8_t eiPad[7];
 	};
 
-	struct ELFHeader : ELFPreHeader
+	struct ELFHeader : ELFHeaderBase
 	{
 		uint16_t eType;
 		uint16_t eMachine;
@@ -37,9 +38,27 @@ public:
 		uint16_t eShStrNdx;
 	};
 
-public:
-	bool Load(BinReader &br);
+	struct SecHeader
+	{
+		uint32_t shName;
+		uint32_t shType;
+		uint64_t shFlags;
+		uint64_t shAddr;
+		uint64_t shOffset;
+		uint64_t shSize;
+		uint32_t shLink;
+		uint32_t shInfo;
+		uint64_t shAddrAlign;
+		uint64_t shEntSize;
+	};
 
 public:
-	ELFHeader Header = {};
+	bool Load(BinReader &br);
+	const ELFHeader& GetELFHeader() const;
+	const SecHeader& GetSecHeader(size_t idx) const;
+
+private:
+	ELFHeader Header_ = {};
+	std::unique_ptr<SecHeader[]> SecHdrList_;
+	size_t SecHdrCount_ = 0;
 };

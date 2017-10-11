@@ -1,6 +1,8 @@
-﻿#include "ELFLoader.h"
+﻿#include <malloc.h>
+#include "ELFLoader.h"
 #include "BinReader.h"
 
+//////////////////////////////////////////////////////////////////////////
 static bool ReadPointer(BinReader &br, uint64_t &result, bool is64Bit, bool isReverse)
 {
 	if (!is64Bit)
@@ -20,9 +22,11 @@ static bool ReadPointer(BinReader &br, uint64_t &result, bool is64Bit, bool isRe
 	return true;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool ELFLoader::Load(BinReader &br)
 {
-	ELFPreHeader &hdr = Header;
+	// 读取文件头
+	ELFHeaderBase &hdr = Header_;
 	if (!br.Read(hdr))
 		return false;
 
@@ -98,19 +102,100 @@ bool ELFLoader::Load(BinReader &br)
 	if (!br.Read(eShStrNdx, isReverse))
 		return false;
 
-	Header.eType = eType;
-	Header.eMachine = eMachine;
-	Header.eVersion = eVersion;
-	Header.eEntry = eEntry;
-	Header.ePhOff = ePhOff;
-	Header.eShOff = eShOff;
-	Header.eFlags = eFlags;
-	Header.eEhSize = eEhSize;
-	Header.ePhEntSize = ePhEntSize;
-	Header.ePhNum = ePhNum;
-	Header.eShEntSize = eShEntSize;
-	Header.eShNum = eShNum;
-	Header.eShStrNdx = eShStrNdx;
+	Header_.eType = eType;
+	Header_.eMachine = eMachine;
+	Header_.eVersion = eVersion;
+	Header_.eEntry = eEntry;
+	Header_.ePhOff = ePhOff;
+	Header_.eShOff = eShOff;
+	Header_.eFlags = eFlags;
+	Header_.eEhSize = eEhSize;
+	Header_.ePhEntSize = ePhEntSize;
+	Header_.ePhNum = ePhNum;
+	Header_.eShEntSize = eShEntSize;
+	Header_.eShNum = eShNum;
+	Header_.eShStrNdx = eShStrNdx;
+
+	// 读取段信息
+	if (!br.Seek(static_cast<size_t>(eShOff)))
+		return false;
+
+	SecHdrList_.reset(new SecHeader[eShNum]);
+	SecHdrCount_ = eShNum;
+
+	uint8_t *secEntry = static_cast<uint8_t*>(alloca(eShEntSize));
+	for (int i = 0; i < eShNum; ++i)
+	{
+		if (!br.ReadBytes(eShEntSize, secEntry))
+			return false;
+
+		BinReader secBr(secEntry, eShEntSize);
+
+		uint32_t shName;
+		if (!secBr.Read(shName))
+			return false;
+
+		uint32_t shType;
+		if (!secBr.Read(shType))
+			return false;
+
+		uint64_t shFlags;
+		if (!ReadPointer(secBr, shFlags, is64Bit, isReverse))
+			return false;
+
+		uint64_t shAddr;
+		if (!ReadPointer(secBr, shAddr, is64Bit, isReverse))
+			return false;
+
+		uint64_t shOffset;
+		if (!ReadPointer(secBr, shOffset, is64Bit, isReverse))
+			return false;
+
+		uint64_t shSize;
+		if (!ReadPointer(secBr, shSize, is64Bit, isReverse))
+			return false;
+
+		uint32_t shLink;
+		if (!secBr.Read(shLink))
+			return false;
+
+		uint32_t shInfo;
+		if (!secBr.Read(shInfo))
+			return false;
+
+		uint64_t shAddrAlign;
+		if (!ReadPointer(secBr, shAddrAlign, is64Bit, isReverse))
+			return false;
+
+		uint64_t shEntSize;
+		if (!ReadPointer(secBr, shEntSize, is64Bit, isReverse))
+			return false;
+
+		SecHeader &secHdr = SecHdrList_[i];
+		secHdr.shName = shName;
+		secHdr.shType = shType;
+		secHdr.shFlags = shFlags;
+		secHdr.shAddr = shAddr;
+		secHdr.shOffset = shOffset;
+		secHdr.shSize = shSize;
+		secHdr.shLink = shLink;
+		secHdr.shInfo = shInfo;
+		secHdr.shAddrAlign = shAddrAlign;
+		secHdr.shEntSize = shEntSize;
+	}
 
 	return true;
+}
+
+const ELFLoader::ELFHeader& ELFLoader::GetELFHeader() const
+{
+	return Header_;
+}
+
+const ELFLoader::SecHeader& ELFLoader::GetSecHeader(size_t idx) const
+{
+	if (idx < SecHdrCount_)
+		return SecHdrList_[idx];
+	static SecHeader sDummy = {};
+	return sDummy;
 }

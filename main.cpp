@@ -43,7 +43,16 @@ int main(int argc, const char **argv)
 
 	BinReader elfReader(elfBuf.get(), elfSize);
 	ELFLoader elf;
-	elf.Load(elfReader);
+	if (!elf.Load(elfReader))
+		return 2;
+
+	const auto &elfHdr = elf.GetELFHeader();
+	// ARM
+	if (elfHdr.eMachine != 0x28)
+		return 3;
+	// Relocatable
+	if (elfHdr.eType != 1)
+		return 4;
 
 	return 0;
 }

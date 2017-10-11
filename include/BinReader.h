@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <stdint.h>
+#include <string.h>
 
 //////////////////////////////////////////////////////////////////////////
 // 二进制数据读取器
@@ -11,6 +12,17 @@ public:
 		: Buffer_(static_cast<const uint8_t*>(ptr))
 		, Length_(len)
 	{}
+
+	bool ReadBytes(size_t sz, void *ptr)
+	{
+		if (Offset_ + sz <= Length_)
+		{
+			memcpy(ptr, Buffer_ + Offset_, sz);
+			Offset_ += sz;
+			return true;
+		}
+		return false;
+	}
 
 	template <class T, bool isReverse = false>
 	bool Read(T &result)
