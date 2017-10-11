@@ -17,10 +17,26 @@ private:
 
 	struct OpCode
 	{
-		uint16_t Code;
-		uint16_t Op1;
-		uint16_t Op2;
-		uint16_t Op3;
+		uint8_t Code;
+		uint8_t Op1;
+		union
+		{
+			struct
+			{
+				uint8_t Op2;
+				uint8_t Op3;
+			};
+			uint16_t OpA;
+		};
+		union
+		{
+			struct
+			{
+				uint8_t Op4;
+				uint8_t Op5;
+			};
+			uint16_t OpB;
+		};
 	};
 
 	OpCode DecodeInst();

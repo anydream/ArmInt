@@ -14,7 +14,11 @@ int main()
 	int64_t num = 34;
 	// Should return 433494437
 	g_Result = Fibonacci(num);
+	
+	int a = (int)g_Result;
+	int j = (int)(g_Result >> 32);
+	a += (j << 2);
 
-	printf("fib: %lld\n", g_Result);
+	printf("fib: %lld, %d\n", g_Result, a);
 	return 0;
 }

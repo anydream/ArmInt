@@ -40,11 +40,11 @@ static int LoadELFFile(ELFLoader &elf, BinReader &elfReader, bool isOutput)
 	}
 
 	const auto &elfHdr = elf.GetELFHeader();
-	// ARM
-	if (elfHdr.eMachine != 0x28)
+	// AArch64
+	if (elfHdr.eMachine != 0xB7)
 	{
 		if (isOutput)
-			fprintf(stderr, "Only support ARM instruction set\n");
+			fprintf(stderr, "Only support AArch64 instruction set\n");
 		return 2;
 	}
 	// Relocatable
@@ -75,7 +75,8 @@ static int LoadELFFile(ELFLoader &elf, BinReader &elfReader, bool isOutput)
 				symInfo.stSize, symInfo.stValue,
 				symInfo.stInfo, symInfo.stOther);
 
-			if (symInfo.stInfo == 1)
+			if (symInfo.stInfo == 1 ||
+				symInfo.stInfo == 3)
 			{
 				const auto &strSec = elf.GetSectionInfo(symInfo.stShNdx);
 				char *strData = static_cast<char*>(alloca(static_cast<size_t>(strSec.shSize)));

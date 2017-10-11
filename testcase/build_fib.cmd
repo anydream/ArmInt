@@ -1,2 +1,2 @@
-clang fib.cpp -target armv7-unknown-linux-gnueabihf -O3 -S
+clang fib.cpp -target aarch64-unknown-linux-gnu -O3 -c
 pause
