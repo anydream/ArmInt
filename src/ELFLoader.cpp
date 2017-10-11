@@ -132,11 +132,11 @@ bool ELFLoader::Load(BinReader &br)
 		BinReader secBr(secEntry, eShEntSize);
 
 		uint32_t shName;
-		if (!secBr.Read(shName))
+		if (!secBr.Read(shName, isReverse))
 			return false;
 
 		uint32_t shType;
-		if (!secBr.Read(shType))
+		if (!secBr.Read(shType, isReverse))
 			return false;
 
 		uint64_t shFlags;
@@ -156,11 +156,11 @@ bool ELFLoader::Load(BinReader &br)
 			return false;
 
 		uint32_t shLink;
-		if (!secBr.Read(shLink))
+		if (!secBr.Read(shLink, isReverse))
 			return false;
 
 		uint32_t shInfo;
-		if (!secBr.Read(shInfo))
+		if (!secBr.Read(shInfo, isReverse))
 			return false;
 
 		uint64_t shAddrAlign;
@@ -184,6 +184,15 @@ bool ELFLoader::Load(BinReader &br)
 		secHdr.shEntSize = shEntSize;
 	}
 
+	const SecHeader &secStrHdr = GetSecHeader(eShStrNdx);
+
+	for (int i = 0; i < eShNum; ++i)
+	{
+		SecHeader &sec = SecHdrList_[i];
+		sec.shNameStr = reinterpret_cast<const char*>(br.Data(static_cast<size_t>(secStrHdr.shOffset + sec.shName)));
+		sec.shDataPtr = br.Data(static_cast<size_t>(sec.shOffset));
+	}
+
 	return true;
 }
 
@@ -198,4 +207,9 @@ const ELFLoader::SecHeader& ELFLoader::GetSecHeader(size_t idx) const
 		return SecHdrList_[idx];
 	static SecHeader sDummy = {};
 	return sDummy;
+}
+
+size_t ELFLoader::GetSecHeaderCount() const
+{
+	return SecHdrCount_;
 }

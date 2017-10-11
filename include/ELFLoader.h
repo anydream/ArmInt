@@ -50,12 +50,16 @@ public:
 		uint32_t shInfo;
 		uint64_t shAddrAlign;
 		uint64_t shEntSize;
+
+		const char *shNameStr;
+		const uint8_t *shDataPtr;
 	};
 
 public:
 	bool Load(BinReader &br);
 	const ELFHeader& GetELFHeader() const;
 	const SecHeader& GetSecHeader(size_t idx) const;
+	size_t GetSecHeaderCount() const;
 
 private:
 	ELFHeader Header_ = {};

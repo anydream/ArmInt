@@ -46,13 +46,20 @@ int main(int argc, const char **argv)
 	if (!elf.Load(elfReader))
 		return 2;
 
-	const auto &elfHdr = elf.GetELFHeader();
+	auto &elfHdr = elf.GetELFHeader();
 	// ARM
 	if (elfHdr.eMachine != 0x28)
 		return 3;
 	// Relocatable
 	if (elfHdr.eType != 1)
 		return 4;
+
+	const size_t secCount = elf.GetSecHeaderCount();
+	for (size_t i = 0; i < secCount; ++i)
+	{
+		auto &secHdr = elf.GetSecHeader(i);
+		printf("[%s] %llu\n", secHdr.shNameStr, secHdr.shSize);
+	}
 
 	return 0;
 }

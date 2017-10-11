@@ -124,6 +124,13 @@ public:
 		return Length_ - Offset_;
 	}
 
+	const uint8_t* Data(size_t pos = 0) const
+	{
+		if (pos <= Length_)
+			return Buffer_ + pos;
+		return nullptr;
+	}
+
 	size_t Size() const
 	{
 		return Length_;
