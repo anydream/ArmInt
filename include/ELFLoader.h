@@ -9,7 +9,7 @@ class BinReader;
 class ELFLoader
 {
 public:
-	struct ELFHeader
+	struct ELFPreHeader
 	{
 		uint8_t eiMagic[4];
 		uint8_t eiClass;
@@ -18,21 +18,28 @@ public:
 		uint8_t eiOsABI;
 		uint8_t eiABIVersion;
 		uint8_t eiPad[7];
+	};
+
+	struct ELFHeader : ELFPreHeader
+	{
 		uint16_t eType;
 		uint16_t eMachine;
 		uint32_t eVersion;
-		Ptr_t eEntry;
-		Ptr_t ePHOff;
-		Ptr_t eSHOff;
+		uint64_t eEntry;
+		uint64_t ePhOff;
+		uint64_t eShOff;
 		uint32_t eFlags;
-		uint16_t eEHSize;
-		uint16_t ePHEntSize;
-		uint16_t ePHNum;
-		uint16_t eSHEntSize;
-		uint16_t eSHNum;
-		uint16_t eSHStrNdx;
+		uint16_t eEhSize;
+		uint16_t ePhEntSize;
+		uint16_t ePhNum;
+		uint16_t eShEntSize;
+		uint16_t eShNum;
+		uint16_t eShStrNdx;
 	};
 
 public:
 	bool Load(BinReader &br);
+
+public:
+	ELFHeader Header = {};
 };

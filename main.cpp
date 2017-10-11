@@ -39,7 +39,7 @@ int main(int argc, const char **argv)
 	size_t elfSize;
 	auto elfBuf = LoadFile(elfFile, elfSize);
 	if (!elfBuf)
-		return -2;
+		return 1;
 
 	BinReader elfReader(elfBuf.get(), elfSize);
 	ELFLoader elf;
