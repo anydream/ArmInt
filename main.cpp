@@ -69,8 +69,15 @@ int main(int argc, const char **argv)
 	const size_t secCount = elf.GetSectionInfoCount();
 	for (size_t i = 0; i < secCount; ++i)
 	{
-		auto &secHdr = elf.GetSectionInfo(i);
-		printf("[%s] %llu, %llu\n", secHdr.shNameStr, secHdr.shOffset, secHdr.shSize);
+		auto &secInfo = elf.GetSectionInfo(i);
+		printf("[%s] %llu, %llu\n", secInfo.shNameStr, secInfo.shOffset, secInfo.shSize);
+	}
+
+	const size_t symCount = elf.GetSymtabInfoCount();
+	for (size_t i = 0; i < symCount; ++i)
+	{
+		auto &symInfo = elf.GetSymtabInfo(i);
+		printf("symbol:[%s] %llu, %llu\n", symInfo.stNameStr, symInfo.stSize, symInfo.stValue);
 	}
 
 	return 0;

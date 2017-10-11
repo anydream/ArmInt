@@ -211,9 +211,14 @@ bool ELFLoader::Load(BinReader &br)
 		if (strncmp(secInfo.shNameStr, strSymtab, sizeof(strSymtab)) != 0)
 			continue;
 
+		const size_t symInfoCount = static_cast<size_t>(secInfo.shSize / secInfo.shEntSize);
+		SymInfoList_.reset(new SymtabInfo[symInfoCount]);
+		SymInfoCount_ = symInfoCount;
+
 		BinReader brSt(secInfo.shDataPtr, static_cast<size_t>(secInfo.shSize));
-		for (int j = 0; j < secInfo.shSize / secInfo.shEntSize; ++j)
+		for (size_t j = 0; j < symInfoCount; ++j)
 		{
+			SymtabInfo &symInfo = SymInfoList_[j];
 			if (!is64Bit)
 			{
 				uint32_t stName;
@@ -240,39 +245,48 @@ bool ELFLoader::Load(BinReader &br)
 				if (!brSt.Read(stShNdx, isReverse))
 					return false;
 
-				int zz = 0;
+				symInfo.stName = stName;
+				symInfo.stInfo = stInfo;
+				symInfo.stOther = stOther;
+				symInfo.stShNdx = stShNdx;
+				symInfo.stValue = stValue;
+				symInfo.stSize = stSize;
 			}
 			else
 			{
-				for (int j = 0; j < secInfo.shSize / secInfo.shEntSize; ++j)
-				{
-					uint32_t stName;
-					if (!brSt.Read(stName, isReverse))
-						return false;
+				uint32_t stName;
+				if (!brSt.Read(stName, isReverse))
+					return false;
 
-					uint8_t stInfo;
-					if (!brSt.Read(stInfo))
-						return false;
+				uint8_t stInfo;
+				if (!brSt.Read(stInfo))
+					return false;
 
-					uint8_t stOther;
-					if (!brSt.Read(stOther))
-						return false;
+				uint8_t stOther;
+				if (!brSt.Read(stOther))
+					return false;
 
-					uint16_t stShNdx;
-					if (!brSt.Read(stShNdx, isReverse))
-						return false;
+				uint16_t stShNdx;
+				if (!brSt.Read(stShNdx, isReverse))
+					return false;
 
-					uint64_t stValue;
-					if (!brSt.Read(stValue, isReverse))
-						return false;
+				uint64_t stValue;
+				if (!brSt.Read(stValue, isReverse))
+					return false;
 
-					uint64_t stSize;
-					if (!brSt.Read(stSize, isReverse))
-						return false;
+				uint64_t stSize;
+				if (!brSt.Read(stSize, isReverse))
+					return false;
 
-					int zz = 0;
-				}
+				symInfo.stName = stName;
+				symInfo.stInfo = stInfo;
+				symInfo.stOther = stOther;
+				symInfo.stShNdx = stShNdx;
+				symInfo.stValue = stValue;
+				symInfo.stSize = stSize;
 			}
+
+			symInfo.stNameStr = reinterpret_cast<const char*>(br.Data(static_cast<size_t>(secStrInfo.shOffset + symInfo.stName)));
 		}
 		break;
 	}
@@ -296,4 +310,17 @@ const ELFLoader::SectionInfo& ELFLoader::GetSectionInfo(size_t idx) const
 size_t ELFLoader::GetSectionInfoCount() const
 {
 	return SecInfoCount_;
+}
+
+const ELFLoader::SymtabInfo& ELFLoader::GetSymtabInfo(size_t idx) const
+{
+	if (idx < SymInfoCount_)
+		return SymInfoList_[idx];
+	static SymtabInfo sDummy = {};
+	return sDummy;
+}
+
+size_t ELFLoader::GetSymtabInfoCount() const
+{
+	return SymInfoCount_;
 }

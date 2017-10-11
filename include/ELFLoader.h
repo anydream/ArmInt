@@ -69,12 +69,22 @@ public:
 
 public:
 	bool Load(BinReader &br);
+
 	const ELFHeader& GetELFHeader() const;
+
 	const SectionInfo& GetSectionInfo(size_t idx) const;
 	size_t GetSectionInfoCount() const;
 
+	const SymtabInfo& GetSymtabInfo(size_t idx) const;
+	size_t GetSymtabInfoCount() const;
+
 private:
+	// 文件头
 	ELFHeader Header_ = {};
+	// 段列表
 	std::unique_ptr<SectionInfo[]> SecInfoList_;
 	size_t SecInfoCount_ = 0;
+	// 符号列表
+	std::unique_ptr<SymtabInfo[]> SymInfoList_;
+	size_t SymInfoCount_ = 0;
 };
