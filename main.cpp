@@ -116,5 +116,13 @@ int main(int argc, const char **argv)
 	ELFMapper elfMap;
 	elfMap.Map(elf);
 
+	ELFLoader::SymtabInfo mainSym;
+	if (!elfMap.GetSymtabInfo("main", mainSym))
+		return false;
+
+	const auto &mainSec = elf.GetSectionInfo(mainSym.stShNdx);
+	size_t mainCodeSize;
+	const uint8_t *mainCode = ELFMapper::GetSectionData(mainSec, elfReader, mainCodeSize);
+
 	return 0;
 }

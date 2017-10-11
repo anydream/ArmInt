@@ -28,22 +28,26 @@ public:
 		}
 	}
 
-	const ELFLoader::SectionInfo& GetSectionInfo(const std::string &name) const
+	bool GetSectionInfo(const std::string &name, ELFLoader::SectionInfo &secInfo) const
 	{
-		size_t idx = -1;
 		const auto &finded = SectionMap_.find(name);
 		if (finded != SectionMap_.end())
-			idx = finded->second;
-		return Loader->GetSectionInfo(idx);
+		{
+			secInfo = Loader->GetSectionInfo(finded->second);
+			return true;
+		}
+		return false;
 	}
 
-	const ELFLoader::SymtabInfo& GetSymtabInfo(const std::string &name) const
+	bool GetSymtabInfo(const std::string &name, ELFLoader::SymtabInfo &symInfo) const
 	{
-		size_t idx = -1;
 		const auto &finded = SymtabMap_.find(name);
 		if (finded != SymtabMap_.end())
-			idx = finded->second;
-		return Loader->GetSymtabInfo(idx);
+		{
+			symInfo = Loader->GetSymtabInfo(finded->second);
+			return true;
+		}
+		return false;
 	}
 
 	std::vector<std::string> GetSectionNames() const
