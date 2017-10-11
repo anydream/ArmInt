@@ -77,7 +77,19 @@ int main(int argc, const char **argv)
 	for (size_t i = 0; i < symCount; ++i)
 	{
 		auto &symInfo = elf.GetSymtabInfo(i);
-		printf("symbol:[%s] %llu, %llu\n", symInfo.stNameStr, symInfo.stSize, symInfo.stValue);
+
+		auto &strSec = elf.GetSectionInfo(symInfo.stShNdx);
+		char *strData = static_cast<char*>(alloca(strSec.shSize));
+		memcpy(strData, elfReader.Data(strSec.shOffset), strSec.shSize);
+
+		printf("symbol: [%s] %llu, %llu, %d, %d",
+			symInfo.stNameStr, symInfo.stSize, symInfo.stValue,
+			symInfo.stInfo, symInfo.stOther);
+
+		if (symInfo.stInfo == 1)
+			printf(", '%.*s'", static_cast<int>(strSec.shSize), strData);
+
+		printf("\n");
 	}
 
 	return 0;
