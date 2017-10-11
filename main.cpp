@@ -113,7 +113,8 @@ int main(int argc, const char **argv)
 	if (status != 0)
 		return status;
 
-	ELFMapper elfMap(elf);
+	ELFMapper elfMap;
+	elfMap.Map(elf);
 
 	return 0;
 }
