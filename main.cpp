@@ -70,7 +70,7 @@ int main(int argc, const char **argv)
 	for (size_t i = 0; i < secCount; ++i)
 	{
 		auto &secInfo = elf.GetSectionInfo(i);
-		printf("[%s] offset(%llu), size(%llu)\n", secInfo.shNameStr, secInfo.shOffset, secInfo.shSize);
+		printf("%u: [%s] offset(%llu), size(%llu)\n", i, secInfo.shNameStr, secInfo.shOffset, secInfo.shSize);
 	}
 
 	const size_t symCount = elf.GetSymtabInfoCount();
@@ -78,7 +78,7 @@ int main(int argc, const char **argv)
 	{
 		auto &symInfo = elf.GetSymtabInfo(i);
 
-		printf("symbol: [%s] secid(%u), size(%llu), value(%llu), type(%u), other(%u)",
+		printf("symbol: [%s] sid(%u), size(%llu), value(%llu), type(%u), other(%u)",
 			symInfo.stNameStr, symInfo.stShNdx,
 			symInfo.stSize, symInfo.stValue,
 			symInfo.stInfo, symInfo.stOther);
