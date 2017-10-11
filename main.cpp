@@ -39,26 +39,38 @@ int main(int argc, const char **argv)
 	size_t elfSize;
 	auto elfBuf = LoadFile(elfFile, elfSize);
 	if (!elfBuf)
+	{
+		fprintf(stderr, "Cannot open ELF image at '%s'\n", elfFile);
 		return 1;
+	}
 
 	BinReader elfReader(elfBuf.get(), elfSize);
 	ELFLoader elf;
 	if (!elf.Load(elfReader))
+	{
+		fprintf(stderr, "Bad ELF image\n");
 		return 2;
+	}
 
 	auto &elfHdr = elf.GetELFHeader();
 	// ARM
 	if (elfHdr.eMachine != 0x28)
+	{
+		fprintf(stderr, "Only support ARM instruction set\n");
 		return 3;
+	}
 	// Relocatable
 	if (elfHdr.eType != 1)
+	{
+		fprintf(stderr, "Currently only support relocatable object file\n");
 		return 4;
+	}
 
-	const size_t secCount = elf.GetSecHeaderCount();
+	const size_t secCount = elf.GetSectionInfoCount();
 	for (size_t i = 0; i < secCount; ++i)
 	{
-		auto &secHdr = elf.GetSecHeader(i);
-		printf("[%s] %llu\n", secHdr.shNameStr, secHdr.shSize);
+		auto &secHdr = elf.GetSectionInfo(i);
+		printf("[%s] %llu, %llu\n", secHdr.shNameStr, secHdr.shOffset, secHdr.shSize);
 	}
 
 	return 0;

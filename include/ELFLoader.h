@@ -38,7 +38,7 @@ public:
 		uint16_t eShStrNdx;
 	};
 
-	struct SecHeader
+	struct SectionInfo
 	{
 		uint32_t shName;
 		uint32_t shType;
@@ -55,14 +55,26 @@ public:
 		const uint8_t *shDataPtr;
 	};
 
+	struct SymtabInfo
+	{
+		uint32_t stName;
+		uint8_t stInfo;
+		uint8_t stOther;
+		uint16_t stShNdx;
+		uint64_t stValue;
+		uint64_t stSize;
+
+		const char *stNameStr;
+	};
+
 public:
 	bool Load(BinReader &br);
 	const ELFHeader& GetELFHeader() const;
-	const SecHeader& GetSecHeader(size_t idx) const;
-	size_t GetSecHeaderCount() const;
+	const SectionInfo& GetSectionInfo(size_t idx) const;
+	size_t GetSectionInfoCount() const;
 
 private:
 	ELFHeader Header_ = {};
-	std::unique_ptr<SecHeader[]> SecHdrList_;
-	size_t SecHdrCount_ = 0;
+	std::unique_ptr<SectionInfo[]> SecInfoList_;
+	size_t SecInfoCount_ = 0;
 };

@@ -43,6 +43,10 @@ bool ELFLoader::Load(BinReader &br)
 		hdr.eiClass != 2)
 		return false;
 
+	if (hdr.eiData != 1 &&
+		hdr.eiData != 2)
+		return false;
+
 	bool is64Bit = hdr.eiClass == 2;
 	bool isBigEndian = hdr.eiData == 2;
 	bool isReverse = isBigEndian != (!!HOST_BIG_ENDIAN);
@@ -80,6 +84,9 @@ bool ELFLoader::Load(BinReader &br)
 
 	uint16_t eEhSize;
 	if (!br.Read(eEhSize, isReverse))
+		return false;
+
+	if (eEhSize != (is64Bit ? 64 : 52))
 		return false;
 
 	uint16_t ePhEntSize;
@@ -120,8 +127,8 @@ bool ELFLoader::Load(BinReader &br)
 	if (!br.Seek(static_cast<size_t>(eShOff)))
 		return false;
 
-	SecHdrList_.reset(new SecHeader[eShNum]);
-	SecHdrCount_ = eShNum;
+	SecInfoList_.reset(new SectionInfo[eShNum]);
+	SecInfoCount_ = eShNum;
 
 	uint8_t *secEntry = static_cast<uint8_t*>(alloca(eShEntSize));
 	for (int i = 0; i < eShNum; ++i)
@@ -171,26 +178,103 @@ bool ELFLoader::Load(BinReader &br)
 		if (!ReadPointer(secBr, shEntSize, is64Bit, isReverse))
 			return false;
 
-		SecHeader &secHdr = SecHdrList_[i];
-		secHdr.shName = shName;
-		secHdr.shType = shType;
-		secHdr.shFlags = shFlags;
-		secHdr.shAddr = shAddr;
-		secHdr.shOffset = shOffset;
-		secHdr.shSize = shSize;
-		secHdr.shLink = shLink;
-		secHdr.shInfo = shInfo;
-		secHdr.shAddrAlign = shAddrAlign;
-		secHdr.shEntSize = shEntSize;
+		SectionInfo &secInfo = SecInfoList_[i];
+		secInfo.shName = shName;
+		secInfo.shType = shType;
+		secInfo.shFlags = shFlags;
+		secInfo.shAddr = shAddr;
+		secInfo.shOffset = shOffset;
+		secInfo.shSize = shSize;
+		secInfo.shLink = shLink;
+		secInfo.shInfo = shInfo;
+		secInfo.shAddrAlign = shAddrAlign;
+		secInfo.shEntSize = shEntSize;
 	}
 
-	const SecHeader &secStrHdr = GetSecHeader(eShStrNdx);
-
+	// 构造段信息数据
+	const SectionInfo &secStrInfo = GetSectionInfo(eShStrNdx);
 	for (int i = 0; i < eShNum; ++i)
 	{
-		SecHeader &sec = SecHdrList_[i];
-		sec.shNameStr = reinterpret_cast<const char*>(br.Data(static_cast<size_t>(secStrHdr.shOffset + sec.shName)));
-		sec.shDataPtr = br.Data(static_cast<size_t>(sec.shOffset));
+		SectionInfo &secInfo = SecInfoList_[i];
+		if (secInfo.shOffset + secInfo.shSize > br.Size())
+			return false;
+
+		secInfo.shNameStr = reinterpret_cast<const char*>(br.Data(static_cast<size_t>(secStrInfo.shOffset + secInfo.shName)));
+		secInfo.shDataPtr = br.Data(static_cast<size_t>(secInfo.shOffset));
+	}
+
+	// 构造符号表
+	const char strSymtab[] = ".symtab";
+	for (int i = 0; i < eShNum; ++i)
+	{
+		const SectionInfo &secInfo = SecInfoList_[i];
+		if (strncmp(secInfo.shNameStr, strSymtab, sizeof(strSymtab)) != 0)
+			continue;
+
+		BinReader brSt(secInfo.shDataPtr, static_cast<size_t>(secInfo.shSize));
+		for (int j = 0; j < secInfo.shSize / secInfo.shEntSize; ++j)
+		{
+			if (!is64Bit)
+			{
+				uint32_t stName;
+				if (!brSt.Read(stName, isReverse))
+					return false;
+
+				uint32_t stValue;
+				if (!brSt.Read(stValue, isReverse))
+					return false;
+
+				uint32_t stSize;
+				if (!brSt.Read(stSize, isReverse))
+					return false;
+
+				uint8_t stInfo;
+				if (!brSt.Read(stInfo))
+					return false;
+
+				uint8_t stOther;
+				if (!brSt.Read(stOther))
+					return false;
+
+				uint16_t stShNdx;
+				if (!brSt.Read(stShNdx, isReverse))
+					return false;
+
+				int zz = 0;
+			}
+			else
+			{
+				for (int j = 0; j < secInfo.shSize / secInfo.shEntSize; ++j)
+				{
+					uint32_t stName;
+					if (!brSt.Read(stName, isReverse))
+						return false;
+
+					uint8_t stInfo;
+					if (!brSt.Read(stInfo))
+						return false;
+
+					uint8_t stOther;
+					if (!brSt.Read(stOther))
+						return false;
+
+					uint16_t stShNdx;
+					if (!brSt.Read(stShNdx, isReverse))
+						return false;
+
+					uint64_t stValue;
+					if (!brSt.Read(stValue, isReverse))
+						return false;
+
+					uint64_t stSize;
+					if (!brSt.Read(stSize, isReverse))
+						return false;
+
+					int zz = 0;
+				}
+			}
+		}
+		break;
 	}
 
 	return true;
@@ -201,15 +285,15 @@ const ELFLoader::ELFHeader& ELFLoader::GetELFHeader() const
 	return Header_;
 }
 
-const ELFLoader::SecHeader& ELFLoader::GetSecHeader(size_t idx) const
+const ELFLoader::SectionInfo& ELFLoader::GetSectionInfo(size_t idx) const
 {
-	if (idx < SecHdrCount_)
-		return SecHdrList_[idx];
-	static SecHeader sDummy = {};
+	if (idx < SecInfoCount_)
+		return SecInfoList_[idx];
+	static SectionInfo sDummy = {};
 	return sDummy;
 }
 
-size_t ELFLoader::GetSecHeaderCount() const
+size_t ELFLoader::GetSectionInfoCount() const
 {
-	return SecHdrCount_;
+	return SecInfoCount_;
 }
